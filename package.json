@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^1.1.5",
+    "@ai-sdk/openai": "^1.1.9",
     "@radix-ui/react-slot": "^1.1.1",
     "ai": "^4.1.1",
     "class-variance-authority": "^0.7.1",

@@ -1,6 +1,7 @@
 "use client"
 import { RiLogoutCircleRLine } from "react-icons/ri";
 import { useRouter } from 'next/navigation'
+import { BASE_URL } from "@/lib/constants";
 
 const UserInfoLogout = ({title}: {title: string}) => {
     const router = useRouter();
@@ -9,7 +10,7 @@ const UserInfoLogout = ({title}: {title: string}) => {
     // console.log(user_info, 'user_info ========== frontend');
 
     let handleLogout = async () => {
-        await fetch('http://localhost:3000/api/auth/logout');
+        await fetch(`${BASE_URL}/api/auth/logout`);
         router.push("/login");
     }
 

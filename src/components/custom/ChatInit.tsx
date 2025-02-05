@@ -20,7 +20,7 @@ const ChatInit = (props: ChatDemoProps) => {
         isLoading,
         addToolResult
     } = 
-    useChat({ api: '/api/chat3',
+    useChat({ api: '/api/chat',
         
         async onToolCall({ toolCall }) {
             if (toolCall.toolName === 'getLocation') {
