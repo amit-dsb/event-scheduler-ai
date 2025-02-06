@@ -3,13 +3,10 @@
 import { useChat, type UseChatOptions } from "ai/react"
 
 import { Chat } from "@/components/ui/chat"
-import { useState } from "react"
 
-type ChatDemoProps = {
-    initialMessages?: UseChatOptions["initialMessages"]
-}
 
-const ChatInit = (props: ChatDemoProps) => {
+
+const ChatInit = () => {
     const {
         messages,
         input,
@@ -33,14 +30,13 @@ const ChatInit = (props: ChatDemoProps) => {
      })
     // } = useChat(props)
 
-    const [location, setLocation] = useState({});
 
     const requestLocation = (toolCallId: string) => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
-                    setLocation({ latitude, longitude });
+                    // setLocation({ latitude, longitude });
                     addToolResult({ toolCallId, result: { latitude, longitude } });
                 },
                 (error) => console.error("Error getting user location:", error)
@@ -68,7 +64,7 @@ const ChatInit = (props: ChatDemoProps) => {
             // ]}
             suggestions={[
                 "Give me list of all meetings.",
-                "Do I have any event planned for today?",
+                "Do you have any event planned for today?",
                 "Can I schedule a meeting?"
             ]}
         />

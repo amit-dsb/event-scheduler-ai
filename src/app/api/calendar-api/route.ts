@@ -69,6 +69,7 @@ const getToken = (req: RequestCookies) => {
             return token;
         }
     } catch (err) {
+        console.log(err)
         return NextResponse.redirect(new URL('/login', req.url));
     }
 }
@@ -138,7 +139,7 @@ const authentication = async (token: tokenAttributes) => {
 }
 
 export const GET = async (req: RequestCookies) => {
-    let token = await getToken(req);
+    const token = await getToken(req);
     // const { searchParams } = new URL(req.url);
     // const type = searchParams.get('type');
     // const timeMin = searchParams.get('timeMin');
@@ -146,7 +147,7 @@ export const GET = async (req: RequestCookies) => {
 
     try {
 
-        let { calendar, oauth2Client } = await authentication(token);
+        const { calendar, oauth2Client } = await authentication(token);
         if (!calendar || !oauth2Client) {
             return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -209,14 +210,14 @@ export async function checkSlotAvailability(params: checkSlotAvailabilityToolPar
         
     
     console.log(params,"checking availability");
-    const auth = await authenticate();
+    const auth = await authenticate()
     console.log("auth", auth);
     const response = await calendar.events.list({
-      auth,
-      calendarId: calendarId,
-      timeMin: params.startTime,
-      timeMax: params.endTime,
-      singleEvents: true,
+        auth: auth ,
+        calendarId: calendarId,
+        timeMin: params.startTime,
+        timeMax: params.endTime,
+        singleEvents: true,
     });
   
     const events = response.data.items;
@@ -229,37 +230,46 @@ export async function checkSlotAvailability(params: checkSlotAvailabilityToolPar
   }
 
 // Function to list events
-export async function listEvents(params: any) {
+interface ListEventsParams {
+    maxResults?: number;
+}
+
+interface Event {
+    start: string;
+    summary: string;
+}
+
+export async function listEvents(params: ListEventsParams): Promise<Event[] | string> {
     const auth = await authenticate();
     const res = await calendar.events.list({
-      auth,
-      calendarId: calendarId,
-      timeMin: new Date().toISOString(),
-      maxResults: params.maxResults || 10,
-      singleEvents: true,
-      orderBy: "startTime",
+        auth,
+        calendarId: calendarId,
+        timeMin: new Date().toISOString(),
+        maxResults: params.maxResults || 10,
+        singleEvents: true,
+        orderBy: "startTime",
     });
-  
-    const events = res.data.items;
+
+    const events = res.data?.items;
     if (!events || events.length === 0) {
-      return "No upcoming events found.";
+        return "No upcoming events found.";
     }
-  
+
     return events.map((event) => ({
-      start: event.start.dateTime || event.start.date,
-      summary: event.summary,
+        start: event.start.dateTime || event.start.date,
+        summary: event.summary,
     }));
-  }
+}
 
 
 export const POST = async (req: RequestCookies) => {
-    let token = await getToken(req);
+    const token = await getToken(req);
     console.log("token",token)
     console.log("api calling")
 
     try {
-        let { calendar, oauth2Client } = await authentication(token);
-        let { summary, location, description, startTime, endTime } = await req.json();
+        const { calendar, oauth2Client } = await authentication(token);
+        const { summary, location, description, startTime, endTime } = await req.json();
 
         if (!calendar || !oauth2Client) {
             return NextResponse.redirect(new URL('/login', req.url));
@@ -288,7 +298,7 @@ export const POST = async (req: RequestCookies) => {
         };
 
         // const auth = await authenticateUser();
-        let response = await calendar.events.insert({
+        const response = await calendar.events.insert({
             calendarId: 'primary',
             auth: oauth2Client,
             conferenceDataVersion: 1,
@@ -309,11 +319,11 @@ export const POST = async (req: RequestCookies) => {
 }
 
 export const PUT = async (req: RequestCookies) => {
-    let token = await getToken(req);
+    const token = await getToken(req);
 
     try {
-        let { calendar, oauth2Client } = await authentication(token);
-        let { id, summary, location, description, startTime, endTime } = await req.json();
+        const { calendar } = await authentication(token);
+        const { id, summary, location, description, startTime, endTime } = await req.json();
         if (!calendar) {
             return NextResponse.redirect(new URL('/login', req.url));
         }
@@ -355,16 +365,17 @@ export const PUT = async (req: RequestCookies) => {
         }, { status: 200 });
 
     } catch (err) {
+        console.log(err)
         return NextResponse.json({ success: false, error: 'Failed to update events' }, { status: 500 });
     }
 }
 
 export const DELETE = async (req: RequestCookies) => {
-    let token = await getToken(req);
+    const token = await getToken(req);
 
     try {
-        let { id } = await req.json();
-        let { calendar, oauth2Client } = await authentication(token);
+        const { id } = await req.json();
+        const { calendar } = await authentication(token);
         if (!calendar) {
             return NextResponse.redirect(new URL('/login', req.url));
         }

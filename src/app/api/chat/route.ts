@@ -1,4 +1,3 @@
-import { google } from '@ai-sdk/google';
 import { streamText, tool} from 'ai';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
@@ -40,27 +39,16 @@ export const checkSlotAvailabilityTool = tool({
     }),
     execute: async ({ startTime, endTime }): Promise<boolean> => {
       const events=  await checkSlotAvailability({ startTime, endTime });
-      return !events || events.length === 0;
+      return Array.isArray(events) && events.length === 0;
 
     },
   });
 
 
-const getAllEvents = async () => {
-    let cookie = await getCookie();
-    const data = await fetch(`${BASE_URL}/api/calendar-api`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${cookie ? cookie : ''}`
-        }
-    });
-    let result = await data.json();
-    return result.events;
-}
+
 
 const addNewEvents = async (summary: string, location: string | undefined, description: string | undefined, startTime: string, endTime: string) => {
-    let cookie = await getCookie();
+    const cookie = await getCookie();
     const data = await fetch(`${BASE_URL}/api/calendar-api`, {
         method: "POST",
         headers: {
@@ -69,12 +57,12 @@ const addNewEvents = async (summary: string, location: string | undefined, descr
         },
         body: JSON.stringify({ summary, location, description, startTime, endTime })
     });
-    let result = await data.json();
+    const result = await data.json();
     return result;
 }
 
 const updateEvents = async (id: string, summary: string, location: string | undefined, description: string | undefined, startTime: string, endTime: string) => {
-    let cookie = await getCookie();
+    const cookie = await getCookie();
     const data = await fetch(`${BASE_URL}/api/calendar-api`, {
         method: "PUT",
         headers: {
@@ -83,12 +71,12 @@ const updateEvents = async (id: string, summary: string, location: string | unde
         },
         body: JSON.stringify({ id, summary, location, description, startTime, endTime })
     });
-    let result = await data.json();
+    const result = await data.json();
     return result;
 }
 
 const deleteEvents = async (id: string) => {
-    let cookie = await getCookie();
+    const cookie = await getCookie();
     const data = await fetch(`${BASE_URL}/api/calendar-api`, {
         method: "DELETE",
         headers: {
@@ -97,7 +85,7 @@ const deleteEvents = async (id: string) => {
         },
         body: JSON.stringify({ id })
     });
-    let result = await data.json();
+    const result = await data.json();
     return result;
 }
 
@@ -110,6 +98,23 @@ export const getCurrentDate = () => {
 export async function POST(req: Request) {
     const { messages } = await req.json();
 
+    interface ToolParameters {
+        startTime?: string;
+        endTime?: string;
+        summary?: string;
+        location?: string;
+        description?: string;
+        id?: string;
+        maxResults?: number;
+    }
+
+    interface ToolExecutionResult {
+        events?: any;
+        error?: string;
+        data?: any;
+        meetingLink?: string;
+    }
+
     const result = streamText({
         model: openai("gpt-4o-mini"),
         system: process.env.SYSTEM_PROMPT,
@@ -120,35 +125,38 @@ export async function POST(req: Request) {
                 description: "List upcoming events from the primary calendar",
                 parameters: z.object({
                     maxResults: z
-                      .number()
-                      .optional()
-                      .describe("Maximum number of events to return"),
-                  }),
-                  execute: async ({ maxResults }): Promise<{ events: any[] }> => {
+                        .number()
+                        .optional()
+                        .describe("Maximum number of events to return"),
+                }),
+                execute: async ({ maxResults }: ToolParameters): Promise<{ events: any }> => {
                     const events = await listEvents({ maxResults });
                     return { events };
-                  },
+                },
             }),
             checkSlotAvailabilityTool: tool({
-                description: "Check if a time slot is available in the insurace oraganization's primary calendar for a meeting not user's calendar",
+                description: "Check if a time slot is available in the insurance organization's primary calendar for a meeting not user's calendar",
                 parameters: z.object({
                     startTime: z.string().describe("Start time for checking availability in ISO format"),
                     endTime: z.string().describe("End time for checking availability in ISO format"),
                 }),
-                execute: async ({startTime, endTime}) => {
+                execute: async ({ startTime, endTime }: ToolParameters): Promise<any> => {
                     console.log("timeMin", startTime);
 
                     try {
-                        const eventsData = await checkSlotAvailability({startTime, endTime});
-                        console.log("eventsData in checkSlotAvailability", eventsData);
-                        return eventsData;
+                        if (startTime && endTime) {
+                            const eventsData = await checkSlotAvailability({ startTime, endTime });
+                            return eventsData;
+                        } else {
+                            return { error: 'Start time and end time must be provided.' };
+                        }
                     } catch (err) {
-                        return { error: 'Failed to fetch events data.' };
+                        return { error: 'Failed to fetch events data.', err };
                     }
                 }
             }),
             addNewEvents: tool({
-                description: "This function will add a new event in the primary calender of the user. You will get an object in return with properties message, data and meetingLink.",
+                description: "This function will add a new event in the primary calendar of the user. You will get an object in return with properties message, data and meetingLink.",
                 parameters: z.object({
                     summary: z.string().describe("Event summary"),
                     location: z.string().optional().describe("Event location"),
@@ -156,18 +164,18 @@ export async function POST(req: Request) {
                     startTime: z.string().describe("Event start time in ISO format"),
                     endTime: z.string().describe("Event end time in ISO format"),
                 }),
-                execute: async ({ summary, location, description, startTime, endTime }) => {
+                execute: async ({ summary, location, description, startTime, endTime }: ToolParameters): Promise<ToolExecutionResult> => {
                     console.log('adding event');
                     try {
-                        const eventsData = await addNewEvents(summary, location, description, startTime, endTime );
+                        const eventsData = await addNewEvents(summary||"", location || '', description || '', startTime|| "", endTime||"");
                         return eventsData;
                     } catch (err) {
-                        return { error: 'Failed to add new event to calendar.' };
+                        return { error: 'Failed to add new event to calendar.', data: err };
                     }
                 }
             }),
             updateEvents: tool({
-                description: "This function will update or reschedule an event in the primary calender of the user. You will get an object in return with properties message, data and meetingLink.",
+                description: "This function will update or reschedule an event in the primary calendar of the user. You will get an object in return with properties message, data and meetingLink.",
                 parameters: z.object({
                     id: z.string().describe("Event id"),
                     summary: z.string().describe("Event summary"),
@@ -176,26 +184,26 @@ export async function POST(req: Request) {
                     startTime: z.string().describe("Event start time in ISO format"),
                     endTime: z.string().describe("Event end time in ISO format"),
                 }),
-                execute: async ({ id, summary, location, description, startTime, endTime }) => {
+                execute: async ({ id, summary, location, description, startTime, endTime }: ToolParameters): Promise<ToolExecutionResult> => {
                     try {
-                        const eventsData = await updateEvents(id, summary, location, description, startTime, endTime );
+                        const eventsData = await updateEvents(id || "", summary || "", location || "", description || "", startTime || "", endTime || "");
                         return eventsData;
                     } catch (err) {
-                        return { error: 'Failed to update event to calendar.' };
+                        return { error: 'Failed to update event to calendar.', data:err };
                     }
                 }
             }),
             deleteEvents: tool({
-                description: "This function will delete an event in the primary calender of the user.",
+                description: "This function will delete an event in the primary calendar of the user.",
                 parameters: z.object({
                     id: z.string().describe("Event id"),
                 }),
-                execute: async ({ id }) => {
+                execute: async ({ id }: ToolParameters): Promise<ToolExecutionResult> => {
                     try {
-                        const eventsData = await deleteEvents( id );
+                        const eventsData = await deleteEvents(id || "");
                         return eventsData;
                     } catch (err) {
-                        return { error: 'Failed to delete event to calendar.' };
+                        return { error: 'Failed to delete event to calendar.', data:err };
                     }
                 }
             }),

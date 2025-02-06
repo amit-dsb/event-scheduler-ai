@@ -5,7 +5,6 @@ interface PromptSuggestionsProps {
 }
 
 export function PromptSuggestions({
-  label,
   append,
   suggestions,
 }: PromptSuggestionsProps) {

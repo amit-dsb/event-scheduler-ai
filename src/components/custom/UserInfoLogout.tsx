@@ -9,7 +9,7 @@ const UserInfoLogout = ({title}: {title: string}) => {
     // const user_info = cookieStore.get('user_info')
     // console.log(user_info, 'user_info ========== frontend');
 
-    let handleLogout = async () => {
+    const handleLogout = async () => {
         await fetch(`${BASE_URL}/api/auth/logout`);
         router.push("/login");
     }

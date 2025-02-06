@@ -1,4 +1,5 @@
 import React, { Suspense } from "react"
+import { JSX } from "react"
 import Markdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -119,13 +120,19 @@ const CodeBlock = ({
   )
 }
 
-function childrenTakeAllStringContents(element: any): string {
+interface ElementWithProps {
+  props?: {
+    children?: React.ReactNode
+  }
+}
+
+function childrenTakeAllStringContents(element: React.ReactNode): string {
   if (typeof element === "string") {
     return element
   }
 
-  if (element?.props?.children) {
-    let children = element.props.children
+  if ((element as ElementWithProps)?.props?.children) {
+    const children = (element as ElementWithProps).props?.children ?? []
 
     if (Array.isArray(children)) {
       return children
@@ -148,10 +155,10 @@ const COMPONENTS = {
   strong: withClass("strong", "font-semibold"),
   a: withClass("a", "text-primary underline underline-offset-2"),
   blockquote: withClass("blockquote", "border-l-2 border-primary pl-4"),
-  code: ({ children, className, node, ...rest }: any) => {
+  code: ({ inline, className, children, ...props }: { inline?: boolean, className?: string, children?: React.ReactNode, [key: string]: any }) => {
     const match = /language-(\w+)/.exec(className || "")
-    return match ? (
-      <CodeBlock className={className} language={match[1]} {...rest}>
+    return !inline && match ? (
+      <CodeBlock className={className} language={match[1]} {...props}>
         {children}
       </CodeBlock>
     ) : (
@@ -159,13 +166,13 @@ const COMPONENTS = {
         className={cn(
           "font-mono [:not(pre)>&]:rounded-md [:not(pre)>&]:bg-background/50 [:not(pre)>&]:px-1 [:not(pre)>&]:py-0.5"
         )}
-        {...rest}
+        {...props}
       >
         {children}
       </code>
     )
   },
-  pre: ({ children }: any) => children,
+  pre: ({ children }: { children: React.ReactNode }) => children,
   ol: withClass("ol", "list-decimal space-y-2 pl-6"),
   ul: withClass("ul", "list-disc space-y-2 pl-6"),
   li: withClass("li", "my-1.5"),
@@ -187,7 +194,7 @@ const COMPONENTS = {
 }
 
 function withClass(Tag: keyof JSX.IntrinsicElements, classes: string) {
-  const Component = ({ node, ...props }: any) => (
+  const Component = ({ ...props }) => (
     <Tag className={classes} {...props} />
   )
   Component.displayName = Tag
