@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { BASE_URL } from '@/lib/constants';
 import {openai} from '@ai-sdk/openai'
+import { checkSlotAvailability, listEvents } from '../calendar-api/route';
 
 export const maxDuration = 30;
 
@@ -25,6 +26,25 @@ const getCookie = async () => {
 //     let result = await data.json();
 //     return result.events;
 // }
+
+
+export const checkSlotAvailabilityTool = tool({
+    description: "Check if a time slot is available in the primary calendar",
+    parameters: z.object({
+      startTime: z
+        .string()
+        .describe("Start time for checking availability in ISO format"),
+      endTime: z
+        .string()
+        .describe("End time for checking availability in ISO format"),
+    }),
+    execute: async ({ startTime, endTime }): Promise<boolean> => {
+      const events=  await checkSlotAvailability({ startTime, endTime });
+      return !events || events.length === 0;
+
+    },
+  });
+
 
 const getAllEvents = async () => {
     let cookie = await getCookie();
@@ -97,32 +117,36 @@ export async function POST(req: Request) {
         maxSteps: 4,
         tools: {
             getAllEvents: tool({
-                description: "This function will return all calender events of the user. It will return empty array if there are no events available.",
-                parameters: z.object({}),
-                execute: async () => {
+                description: "List upcoming events from the primary calendar",
+                parameters: z.object({
+                    maxResults: z
+                      .number()
+                      .optional()
+                      .describe("Maximum number of events to return"),
+                  }),
+                  execute: async ({ maxResults }): Promise<{ events: any[] }> => {
+                    const events = await listEvents({ maxResults });
+                    return { events };
+                  },
+            }),
+            checkSlotAvailabilityTool: tool({
+                description: "Check if a time slot is available in the insurace oraganization's primary calendar for a meeting not user's calendar",
+                parameters: z.object({
+                    startTime: z.string().describe("Start time for checking availability in ISO format"),
+                    endTime: z.string().describe("End time for checking availability in ISO format"),
+                }),
+                execute: async ({startTime, endTime}) => {
+                    console.log("timeMin", startTime);
+
                     try {
-                        const eventsData = await getAllEvents();
+                        const eventsData = await checkSlotAvailability({startTime, endTime});
+                        console.log("eventsData in checkSlotAvailability", eventsData);
                         return eventsData;
                     } catch (err) {
                         return { error: 'Failed to fetch events data.' };
                     }
                 }
             }),
-            // checkSlotAvailabilityTool: tool({
-            //     description: "This function will return all calender events of the user under a time slot given by the user. It will return empty array if there are no events available.",
-            //     parameters: z.object({
-            //         timeMin: z.string().describe("Start time for checking availability in ISO format"),
-            //         timeMax: z.string().describe("End time for checking availability in ISO format"),
-            //     }),
-            //     execute: async ({timeMin, timeMax}) => {
-            //         try {
-            //             const eventsData = await checkSlotAvailabilityTool(timeMin, timeMax);
-            //             return eventsData;
-            //         } catch (err) {
-            //             return { error: 'Failed to fetch events data.' };
-            //         }
-            //     }
-            // }),
             addNewEvents: tool({
                 description: "This function will add a new event in the primary calender of the user. You will get an object in return with properties message, data and meetingLink.",
                 parameters: z.object({
@@ -133,6 +157,7 @@ export async function POST(req: Request) {
                     endTime: z.string().describe("Event end time in ISO format"),
                 }),
                 execute: async ({ summary, location, description, startTime, endTime }) => {
+                    console.log('adding event');
                     try {
                         const eventsData = await addNewEvents(summary, location, description, startTime, endTime );
                         return eventsData;

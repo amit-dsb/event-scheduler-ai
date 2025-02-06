@@ -40,6 +40,20 @@ export async function GET(req: Request) {
         // expires: new Date(Date.now() + 60 * 60 * 24 * 365 * 1000),
       })
 
+      cookieStore.set({ 
+        name : "refresh_token",
+        value: tokens.refresh_token,
+        httpOnly: true, 
+        path: '/',
+      })
+
+      cookieStore.set({ 
+        name : "expiry_date",
+        value: tokens.expiry_date,
+        httpOnly: true, 
+        path: '/',
+      })
+
       cookieStore.set({
         name: 'user_info',
         value: JSON.stringify(userInfo),

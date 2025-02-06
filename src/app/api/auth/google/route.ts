@@ -9,10 +9,16 @@ export async function GET() {
     );
     // google.calendar('v3')
     const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar',
-        prompt: 'select_account',
+        access_type: 'offline', // This is essential for getting a refresh_token
+        scope: [
+            'https://www.googleapis.com/auth/drive',
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'https://www.googleapis.com/auth/calendar',
+        ],
+        prompt: 'consent', // Ensure that 'consent' is included to get the refresh token
     });
+
+
 
     return NextResponse.redirect(authUrl);
 }
