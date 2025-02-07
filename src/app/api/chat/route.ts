@@ -129,7 +129,7 @@ export async function POST(req: Request) {
                         .optional()
                         .describe("Maximum number of events to return"),
                 }),
-                execute: async ({ maxResults }: ToolParameters): Promise<{ events: any }> => {
+                execute: async ({ maxResults }: ToolParameters)=> {
                     const events = await listEvents({ maxResults });
                     return { events };
                 },
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
                     startTime: z.string().describe("Start time for checking availability in ISO format"),
                     endTime: z.string().describe("End time for checking availability in ISO format"),
                 }),
-                execute: async ({ startTime, endTime }: ToolParameters): Promise<any> => {
+                execute: async ({ startTime, endTime }: ToolParameters) => {
                     console.log("timeMin", startTime);
 
                     try {

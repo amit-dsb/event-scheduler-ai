@@ -1,6 +1,6 @@
 "use client"
 
-import { useChat, type UseChatOptions } from "ai/react"
+import { useChat, } from "ai/react"
 
 import { Chat } from "@/components/ui/chat"
 

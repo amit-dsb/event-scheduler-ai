@@ -4,12 +4,13 @@ const nextConfig: NextConfig = {
 //   experimental: {
 //     serverComponentsExternalPackages: ['sequelize', 'open-graph-scraper'],
 // },
-eslint:{
-    ignoreDuringBuilds: true
+eslint: {
+    ignoreDuringBuilds: true,
 },
+
 typescript: {
-    ignoreBuildErrors: true
-}
+    ignoreBuildErrors: true,
+},
 };
 
 export default nextConfig;
