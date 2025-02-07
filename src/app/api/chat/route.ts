@@ -6,6 +6,7 @@ import {openai} from '@ai-sdk/openai'
 import { checkSlotAvailability, listEvents } from '../calendar-api/route';
 
 export const maxDuration = 30;
+//dsd
 
 const getCookie = async () => {
     const cookieStore = await cookies();
