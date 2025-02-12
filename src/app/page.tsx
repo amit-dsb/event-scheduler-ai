@@ -1,4 +1,5 @@
 'use client';
+import PrivacyPopup from "../components/privacy";
 
 const HomePage = () => {
   const handleLogin = () => {
@@ -18,8 +19,11 @@ const HomePage = () => {
     <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="text-xl mb-4">Welcome to Google OAuth with Next.js 15!</h1>
       <button className="p-2 px-5 bg-gray-200 hover:bg-gray-300 duration-300 rounded-xl" onClick={handleLogin}>Login with Google</button>
+      <PrivacyPopup />
     </div>
+    
   );
 };
+
 
 export default HomePage;
